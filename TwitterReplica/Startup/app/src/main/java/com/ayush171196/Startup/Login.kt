@@ -1,11 +1,11 @@
 package com.ayush171196.Startup
 
-import android.app.Activity
-import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.drawable.BitmapDrawable
+import android.media.Image
 import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -13,21 +13,103 @@ import android.provider.MediaStore
 import android.support.v4.app.ActivityCompat
 import android.view.View
 import android.widget.Toast
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.android.synthetic.main.activity_login.*
-
+import kotlinx.android.synthetic.main.activity_login.ivimagePerson
+import java.io.ByteArrayOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 class Login : AppCompatActivity() {
 
+    private var mAuth:FirebaseAuth?=null
+    private var database= FirebaseDatabase.getInstance()
+    private var myRef=database.reference
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+        mAuth= FirebaseAuth.getInstance()
         //sbse pehle jb user imageview pr click krega to ye function call hoga.
         ivimagePerson.setOnClickListener(View.OnClickListener {
             checkPermission()
             //checkPermission naam ka function neeche call hojayega
         })
     }
+    fun LoginToFireBase(email:String,password:String)
+    {
+        mAuth!!.createUserWithEmailAndPassword(email,password)
+                .addOnCompleteListener(this){ task ->
+
+                    if (task.isSuccessful)
+                    {
+                        Toast.makeText(applicationContext,"Successful login",Toast.LENGTH_LONG).show()
+                        SaveImageInFirebase()
+                    }else
+                    {
+                        Toast.makeText(applicationContext,"fail login",Toast.LENGTH_LONG).show()
+                    }
+                }
+    }
+    fun SaveImageInFirebase()
+    {
+        var currentUser =mAuth!!.currentUser    //current user ki info leli
+        val email:String = currentUser!!.email.toString()   //email acquire krli uski
+        val storage = FirebaseStorage.getInstance()     //firebasestorage ki info lene ke liye pehle android me hmesha hum .getinstance lege uska ek variable me
+        val storageref = storage.getReferenceFromUrl("gs://tictactoeonline-26f96.appspot.com")      //storage database se link krega ye varaible
+        val df = SimpleDateFormat("ddMMyyHHmmss")       //ye hum basically unique path dene ke liye bna re h
+        val dataobj = Date()
+        val imagePath = splitString(email) + "." + df.format(dataobj)+ ".jpg"   //unique path bngya
+        val ImageRef = storageref.child("images/"+imagePath)    //ek folder dhundhega image nam ka aur usme ye imagepath daldega
+        ivimagePerson.isDrawingCacheEnabled=true
+        ivimagePerson.buildDrawingCache()
+
+        val drawable = ivimagePerson.drawable as BitmapDrawable
+        val bitmap = drawable.bitmap
+        val baos = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG,100,baos)
+        val data = baos.toByteArray()
+        val uploadTask =ImageRef.putBytes(data)
+        uploadTask.addOnFailureListener{
+            Toast.makeText(applicationContext,"Failed to upload",Toast.LENGTH_LONG).show()
+        }.addOnSuccessListener { taskSnapshot ->
+            var DownloadUrl= taskSnapshot.downloadUrl!!.toString()
+            myRef.child("Users").child(currentUser.uid).child("Email").setValue(currentUser.email)
+            myRef.child("Users").child(currentUser.uid).child("Profile Image").setValue(DownloadUrl)
+            LoadTweets()
+
+        }
+    }
+    fun splitString(email: String):String
+    {
+        val split = email.split("@")
+        return split[0]
+    }
+
+    override fun onStart() {
+        super.onStart()
+        LoadTweets()
+    }
+
+    fun LoadTweets()
+    {
+        var currentUser =mAuth!!.currentUser
+
+        if(currentUser!=null) {
+
+
+            var intent = Intent(this,MainActivity::class.java)
+            intent.putExtra("email", currentUser.email)
+            intent.putExtra("uid", currentUser.uid)
+            startActivity(intent)
+
+        }
+    }
+
     val READIMAGE:Int=253
     fun checkPermission()
     {
@@ -90,6 +172,6 @@ class Login : AppCompatActivity() {
     }
     fun loginbuttonclicked(view:View)
     {
-
+        LoginToFireBase(emailtext.text.toString(),passwordtext.text.toString())
     }
 }
