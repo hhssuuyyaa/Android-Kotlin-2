@@ -22,6 +22,7 @@ import kotlinx.android.synthetic.main.activity_login.ivimagePerson
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 class Login : AppCompatActivity() {
@@ -39,6 +40,9 @@ class Login : AppCompatActivity() {
             checkPermission()
             //checkPermission naam ka function neeche call hojayega
         })
+
+
+
     }
     fun LoginToFireBase(email:String,password:String)
     {
