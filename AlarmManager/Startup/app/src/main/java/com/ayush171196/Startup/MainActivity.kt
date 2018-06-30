@@ -3,6 +3,7 @@ package com.ayush171196.Startup
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import com.ayush171196.Startup.R.id.tvShowTime
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -12,7 +13,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
     }
     fun BuSetTime(view:View){
-        val popTime = PopTime()
+        val popTime = PopTime()         //Made Object of PopTime Class
         val fm = fragmentManager
         popTime.show(fm,"Select Time")
     }
