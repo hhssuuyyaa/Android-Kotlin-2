@@ -19,6 +19,7 @@ class MainActivity : AppCompatActivity(),SensorEventListener {
 
 
     var isRunning=false
+    //True
     override fun onSensorChanged(event: SensorEvent?) {
 
         if(event!!.values[0]>40 && isRunning==false){
