@@ -3,13 +3,13 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/help"
-        android:icon="@drawable/ic_local_hospital_white_24dp"
-        android:title="Help"
+        android:id="@+id/addContact"
+        android:icon="@drawable/ic_add_white_24dp"
+        android:title="Add"
         app:showAsAction="always" />
     <item
-        android:id="@+id/addTracker"
-        android:icon="@drawable/ic_perm_identity_white_24dp"
-        android:title="Add"
+        android:id="@+id/finishActivity"
+        android:icon="@drawable/ic_done_white_24dp"
+        android:title="Finish"
         app:showAsAction="always" />
 </menu>
