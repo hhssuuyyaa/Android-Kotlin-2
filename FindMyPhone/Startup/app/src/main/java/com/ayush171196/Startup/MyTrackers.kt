@@ -1,9 +1,14 @@
 package com.ayush171196.Startup
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.ContactsContract
+import android.support.v4.app.ActivityCompat
 import android.text.Layout
 import android.view.*
 import android.widget.BaseAdapter
@@ -17,17 +22,18 @@ class MyTrackers : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_my_trackers)
-        dummyData()
+       // dummyData()
         adapter = ContactAdapter(this,listOfContact)
         lvContactList.adapter = adapter
     }
 
     //for debug
-    fun dummyData() {
+    /*fun dummyData() {
         listOfContact.add(UserContact("Ayush", "8178826886"))
         listOfContact.add(UserContact("Anshul", "8447770899"))
         listOfContact.add(UserContact("Papa", "9810024409"))
-    }
+
+    */
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
 
@@ -44,7 +50,7 @@ class MyTrackers : AppCompatActivity() {
                 finish()
             }
             R.id.addContact ->{
-                //TODO:: ask new Contact
+                checkPermission()
             }
             else ->{
                 return super.onOptionsItemSelected(item)
@@ -52,6 +58,64 @@ class MyTrackers : AppCompatActivity() {
         }
         return true
     }
+
+    val CONTACT_CODE =123
+    fun checkPermission(){
+
+        if(Build.VERSION.SDK_INT>=23){
+
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS) !=
+                    PackageManager.PERMISSION_GRANTED ){
+
+                requestPermissions(arrayOf(android.Manifest.permission.READ_CONTACTS), CONTACT_CODE)
+                return
+            }
+        }
+        pickContact()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+
+        when (requestCode){
+            PICK_CODE ->{
+                if (resultCode== Activity.RESULT_OK){
+
+                    val contactData=data!!.data
+                    val c= contentResolver.query(contactData,null,null,null,null)
+
+                    if (c.moveToFirst()){
+
+                        val id= c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts._ID))
+                        val hasPhone= c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.HAS_PHONE_NUMBER))
+                        if (hasPhone.equals("1")){
+                            val phones= contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null
+                                    , ContactsContract.CommonDataKinds.Phone.CONTACT_ID + "=" + id, null,null)
+
+                            phones.moveToFirst()
+                            var phoneNumber = phones.getString(phones.getColumnIndex("data1"))
+                            val name = c.getString(c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
+                            listOfContact.add(UserContact(name,phoneNumber))
+                            adapter!!.notifyDataSetChanged()
+                        }
+
+                    }
+
+                }
+
+            }
+            else ->{
+                super.onActivityResult(requestCode, resultCode, data)
+            }
+        }
+
+    }
+
+    val PICK_CODE=1234
+    fun pickContact() {
+        val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
+        startActivityForResult(intent, PICK_CODE)
+    }
+
     class ContactAdapter:BaseAdapter {
 
         var listOfContact=ArrayList<UserContact>()
