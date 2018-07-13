@@ -11,6 +11,8 @@ import android.provider.ContactsContract
 import android.support.v4.app.ActivityCompat
 import android.text.Layout
 import android.view.*
+import android.widget.Adapter
+import android.widget.AdapterView
 import android.widget.BaseAdapter
 import kotlinx.android.synthetic.main.activity_my_trackers.*
 import kotlinx.android.synthetic.main.contact_ticket.view.*
@@ -19,12 +21,24 @@ class MyTrackers : AppCompatActivity() {
 
     var adapter:ContactAdapter?=null
     var listOfContact=ArrayList<UserContact>()
+    var userData:UserData?=null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_my_trackers)
+        userData = UserData(applicationContext)
        // dummyData()
         adapter = ContactAdapter(this,listOfContact)
         lvContactList.adapter = adapter
+        lvContactList.onItemClickListener= AdapterView.OnItemClickListener{ parent, view, position, id ->
+            val userInfo = listOfContact[position]
+            UserData.myTrackers.remove(userInfo.phoneNumber)
+            refreshData()
+            //saved to share reference
+
+            userData!!.saveContactInfo()
+        }
+        userData!!.loadContactInfo()
+        refreshData()
     }
 
     //for debug
@@ -94,8 +108,12 @@ class MyTrackers : AppCompatActivity() {
                             phones.moveToFirst()
                             var phoneNumber = phones.getString(phones.getColumnIndex("data1"))
                             val name = c.getString(c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
-                            listOfContact.add(UserContact(name,phoneNumber))
-                            adapter!!.notifyDataSetChanged()
+
+                            phoneNumber = UserData.formatPhoneNumber(phoneNumber)
+                            UserData.myTrackers.put(phoneNumber,name)
+                            refreshData()
+                            //saved to share reference
+                            userData!!.saveContactInfo()
                         }
 
                     }
@@ -114,6 +132,14 @@ class MyTrackers : AppCompatActivity() {
     fun pickContact() {
         val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
         startActivityForResult(intent, PICK_CODE)
+    }
+
+    fun refreshData(){
+        listOfContact.clear()
+        for ((key,value) in UserData.myTrackers){
+            listOfContact.add(UserContact(value,key))
+        }
+        adapter!!.notifyDataSetChanged()
     }
 
     class ContactAdapter:BaseAdapter {
