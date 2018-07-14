@@ -7,13 +7,15 @@ import android.os.Bundle
 import android.view.*
 import android.widget.AdapterView
 import android.widget.BaseAdapter
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.*
+import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.contact_ticket.view.*
 
 class MainActivity : AppCompatActivity() {
-    var adapter: MyTrackers.ContactAdapter?=null
+    var adapter: ContactAdapter?=null
     var listOfContact=ArrayList<UserContact>()
+    var databaseRef:DatabaseReference?=null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -21,14 +23,56 @@ class MainActivity : AppCompatActivity() {
         val userData = UserData(this)
         userData.loadPhoneNumber()
 
-        dummyData()
+        databaseRef = FirebaseDatabase.getInstance().reference
 
-        adapter = MyTrackers.ContactAdapter(this, listOfContact)
+        //dummyData()
+
+        adapter = ContactAdapter(this, listOfContact)
         lvContactList.adapter = adapter
         lvContactList.onItemClickListener= AdapterView.OnItemClickListener{ parent, view, position, id ->
             val userInfo = listOfContact[position]
-            UserData.myTrackers.remove(userInfo.phoneNumber)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshUsers()
+    }
+
+    fun refreshUsers(){
+        val userData = UserData(this)
+        if (userData.loadPhoneNumber()=="empty"){
+            return
+        }
+        databaseRef!!.child("Users").child(userData.loadPhoneNumber()).child("finders").addValueEventListener(object :ValueEventListener {
+            override fun onDataChange(p0: DataSnapshot) {
+                try {
+
+
+                val td = p0!!.value as HashMap<String, Any>
+                listOfContact.clear()
+                if (td == null) {
+                    listOfContact.add(UserContact("NoUsers", "Nothing"))
+                    adapter!!.notifyDataSetChanged()
+                    return
+                }
+
+                for (key in td.keys) {
+                    listOfContact.add(UserContact("NoName", key))
+                }
+                adapter!!.notifyDataSetChanged()
+            }catch (ex:Exception){
+                    listOfContact.clear()
+                    listOfContact.add(UserContact("NoUsers", "Nothing"))
+                    adapter!!.notifyDataSetChanged()
+                    return
+                }
+        }
+
+            override fun onCancelled(p0: DatabaseError) {
+
+            }
+        })
     }
 
     //for debug
@@ -76,11 +120,17 @@ class MainActivity : AppCompatActivity() {
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
             val userContact = listOfContact[position]
-            val inflator = context!!.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            val contactTicketView = inflator.inflate(R.layout.contact_ticket, null)
-            contactTicketView.tvName.text= userContact.name
-            contactTicketView.tvPhoneNumber.text = userContact.phoneNumber
-            return contactTicketView
+            if (userContact.name.equals("NoUsers")){
+                val inflator = context!!.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+                val contactTicketView = inflator.inflate(R.layout.no_user, null)
+                return contactTicketView
+            }else {
+                val inflator = context!!.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+                val contactTicketView = inflator.inflate(R.layout.contact_ticket, null)
+                contactTicketView.tvName.text = userContact.name
+                contactTicketView.tvPhoneNumber.text = userContact.phoneNumber
+                return contactTicketView
+            }
         }
 
         override fun getItem(position: Int): Any {
