@@ -1,9 +1,11 @@
-package com.ayush171196.Startup
+package com.hussein.startup
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -15,8 +17,10 @@ import android.widget.BaseAdapter
 import android.widget.Toast
 import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.activity_login.*
-import kotlinx.android.synthetic.main.activity_main.*
+import  kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.contact_ticket.view.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
     var adapter: ContactAdapter?=null
@@ -26,109 +30,131 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val userData = UserData(this)
+        val userData= UserData(this)
         userData.isFirstTimeLoad()
 
-        databaseRef = FirebaseDatabase.getInstance().reference
+        databaseRef= FirebaseDatabase.getInstance().reference
 
-        //dummyData()
+        // For Deby=ug only
+        //dummpyData()
 
         adapter = ContactAdapter(this, listOfContact)
-        lvContactList.adapter = adapter
-        lvContactList.onItemClickListener= AdapterView.OnItemClickListener{ parent, view, position, id ->
-            val userInfo = listOfContact[position]
+        lvContactList.adapter= adapter
+        lvContactList.onItemClickListener= AdapterView.OnItemClickListener{
+            parent,view,postion,id ->
+            val userInfo =listOfContact[postion]
+          // get datatime
+            val df =SimpleDateFormat("yyyy/MMM/dd HH:MM:ss")
+            val date =Date()
+            // save to database
+            databaseRef!!.child("Users").child(userInfo.phoneNumber).child("request").setValue(df.format(date).toString())
+
+            val intent =Intent(applicationContext,MapsActivity::class.java)
+            intent.putExtra("phoneNumber",userInfo.phoneNumber)
+            startActivity(intent)
         }
+
+
+
     }
+
 
     override fun onResume() {
         super.onResume()
-        refreshUsers()
-        checkPermission()
-    }
 
-    fun refreshUsers(){
-        val userData = UserData(this)
+        val userData= UserData(this)
         if (userData.loadPhoneNumber()=="empty"){
             return
         }
-        databaseRef!!.child("Users").child(userData.loadPhoneNumber()).child("finders").addValueEventListener(object :ValueEventListener {
-            override fun onDataChange(p0: DataSnapshot) {
-                try {
+        refreshUsers()
 
+        if (MyService.isServiceRunning) return // Donot run again
+        checkContactPermission()
+        checkLocationPermission()
 
-                val td = p0!!.value as HashMap<String, Any>
-                listOfContact.clear()
-                if (td == null) {
-                    listOfContact.add(UserContact("NoUsers", "Nothing"))
-                    adapter!!.notifyDataSetChanged()
-                    return
-                }
+    }
 
-                for (key in td.keys) {
-                    val name = listOfContact
-                    listOfContact.add(UserContact(name.toString(),key))
-                }
-                adapter!!.notifyDataSetChanged()
-            }catch (ex:Exception){
-                    listOfContact.clear()
-                    listOfContact.add(UserContact("NoUsers", "Nothing"))
-                    adapter!!.notifyDataSetChanged()
-                    return
-                }
-        }
+    fun refreshUsers(){
+         val userData= UserData(this)
+        databaseRef!!.child("Users").child(userData.loadPhoneNumber()).child("Finders").addValueEventListener(object :
+        ValueEventListener{
 
-            override fun onCancelled(p0: DatabaseError) {
+            override fun onDataChange(dataSnapshot: DataSnapshot?) {
+               try {
+                   val td = dataSnapshot!!.value as HashMap<String,Any>
+
+                   listOfContact.clear()
+
+                   if (td==null){
+                       listOfContact.add(UserContact("NO_USERS","nothing"))
+                       adapter!!.notifyDataSetChanged()
+                       return
+                   }
+
+                   for (key in td.keys){
+                       val name = listOfContacts[key]
+                       listOfContact.add(UserContact(name.toString() ,key))
+
+                   }
+
+                   adapter!!.notifyDataSetChanged()
+               }catch (ex:Exception){
+                   listOfContact.clear()
+                   listOfContact.add(UserContact("NO_USERS","nothing"))
+                   adapter!!.notifyDataSetChanged()
+                   return
+               }
+            }
+
+            override fun onCancelled(p0: DatabaseError?) {
 
             }
         })
     }
-
-    //for debug
-    fun dummyData() {
-        listOfContact.add(UserContact("Ayush", "8178826886"))
-        listOfContact.add(UserContact("Anshul", "8447770899"))
-        listOfContact.add(UserContact("Papa", "9810024409"))
-
+    //for debug first time
+    fun dummpyData(){
+        listOfContact.add(UserContact("hussein","3434"))
+        listOfContact.add(UserContact("jena","344343"))
+        listOfContact.add(UserContact("laya","434543"))
     }
 
-    //To use menu in our project we need two methods and one of them is below
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
 
-        //Loads menu in activity when this method calls up
-        val inflater = menuInflater
+        val inflater=menuInflater
         inflater.inflate(R.menu.main_menu,menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-
         when(item!!.itemId){
             R.id.addTracker ->{
-                val intent = Intent(this,MyTrackers::class.java)
+                val intent= Intent(this,MyTrackers::class.java)
                 startActivity(intent)
             }
             R.id.help ->{
-                //TODO:: ask for help from friend
+                //TODO:: as k for help from friend
             }
             else ->{
                 return super.onOptionsItemSelected(item)
             }
         }
+
         return true
     }
 
-    class ContactAdapter: BaseAdapter {
 
+
+    class ContactAdapter: BaseAdapter {
         var listOfContact=ArrayList<UserContact>()
         var context: Context?=null
         constructor(context: Context, listOfContact:ArrayList<UserContact>){
             this.context=context
             this.listOfContact=listOfContact
         }
+        override fun getView(p0: Int, p1: View?, p2: ViewGroup?): View {
+            val userContact = listOfContact[p0]
 
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-            val userContact = listOfContact[position]
-            if (userContact.name.equals("NoUsers")){
+            if (userContact.name.equals("NO_USERS")){
                 val inflator = context!!.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
                 val contactTicketView = inflator.inflate(R.layout.no_user, null)
                 return contactTicketView
@@ -137,26 +163,29 @@ class MainActivity : AppCompatActivity() {
                 val contactTicketView = inflator.inflate(R.layout.contact_ticket, null)
                 contactTicketView.tvName.text = userContact.name
                 contactTicketView.tvPhoneNumber.text = userContact.phoneNumber
+
                 return contactTicketView
             }
         }
 
-        override fun getItem(position: Int): Any {
-            return listOfContact[position]
-            //we dont need this part
+        override fun getItem(p0: Int): Any {
+
+            return listOfContact[p0]
         }
 
-        override fun getItemId(position: Int): Long {
-            return position.toLong()
+        override fun getItemId(p0: Int): Long {
+            return p0.toLong()
         }
 
         override fun getCount(): Int {
+
             return listOfContact.size
         }
+
     }
 
     val CONTACT_CODE =123
-    fun checkPermission(){
+    fun checkContactPermission(){
 
         if(Build.VERSION.SDK_INT>=23){
 
@@ -180,6 +209,13 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, "Cannot acces to contact ", Toast.LENGTH_LONG).show()
                 }
             }
+            LOCATION_CODE->{
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    getUserLocation()
+                } else {
+                    Toast.makeText(this, "Cannot acces to contact ", Toast.LENGTH_LONG).show()
+                }
+            }
             else ->{
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults)
             }
@@ -189,8 +225,9 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    var listOfContacts = HashMap<String,String>()
+    var listOfContacts=HashMap<String,String>()
     fun loadContact() {
+
         try{
             listOfContacts.clear()
 
@@ -203,6 +240,34 @@ class MainActivity : AppCompatActivity() {
                 listOfContacts.put(UserData.formatPhoneNumber(phoneNumber),name)
             }while (cursor.moveToNext())
         }catch (ex:Exception){}
+    }
+
+
+
+    val LOCATION_CODE =124
+    fun checkLocationPermission(){
+
+        if(Build.VERSION.SDK_INT>=23){
+
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+                    PackageManager.PERMISSION_GRANTED ){
+
+                requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_CODE)
+                return
+            }
+        }
+        getUserLocation()
+    }
+
+    fun getUserLocation(){
+
+
+        // Start service
+        if(!MyService.isServiceRunning){
+            val intent= Intent(baseContext,MyService::class.java)
+            startService(intent)
+        }
 
     }
+
 }

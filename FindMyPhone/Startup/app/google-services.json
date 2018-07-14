@@ -1,35 +1,35 @@
 {
   "project_info": {
-    "project_number": "44578115236",
-    "firebase_url": "https://findmyphone-a28fa.firebaseio.com",
-    "project_id": "findmyphone-a28fa",
-    "storage_bucket": "findmyphone-a28fa.appspot.com"
+    "project_number": "116966358976",
+    "firebase_url": "https://findmyphone-50374.firebaseio.com",
+    "project_id": "findmyphone-50374",
+    "storage_bucket": "findmyphone-50374.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:44578115236:android:88aafec0e8c75efe",
+        "mobilesdk_app_id": "1:116966358976:android:c7e388f83f7893d3",
         "android_client_info": {
-          "package_name": "com.ayush171196.FindMyPhoneOffline"
+          "package_name": "com.hussein.findmyphone"
         }
       },
       "oauth_client": [
         {
-          "client_id": "44578115236-91v8guf0r5dsv7b5r6m4ceummsivpsa4.apps.googleusercontent.com",
+          "client_id": "116966358976-9hmm102hbvirq776tv9tkrl8e4nr7vmi.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.ayush171196.FindMyPhoneOffline",
-            "certificate_hash": "157549d166d5d7c3dcf390538e1926f8de89b8ce"
+            "package_name": "com.hussein.findmyphone",
+            "certificate_hash": "76a07b52241638f10fb6d3cf8f6b855f929169dc"
           }
         },
         {
-          "client_id": "44578115236-uc4o38q99uh7bknsujs05q3lp6tlnp77.apps.googleusercontent.com",
+          "client_id": "116966358976-8dmblismo9itq681jullfs291g9neeha.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBhUooZFleAhGu-6iNxQJlLasFNcZ7Juac"
+          "current_key": "AIzaSyD_h7P9zImCXUi2An9N-CRFuXlA3ZwMqgo"
         }
       ],
       "services": {
@@ -40,7 +40,7 @@
           "status": 2,
           "other_platform_oauth_client": [
             {
-              "client_id": "44578115236-uc4o38q99uh7bknsujs05q3lp6tlnp77.apps.googleusercontent.com",
+              "client_id": "116966358976-8dmblismo9itq681jullfs291g9neeha.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
