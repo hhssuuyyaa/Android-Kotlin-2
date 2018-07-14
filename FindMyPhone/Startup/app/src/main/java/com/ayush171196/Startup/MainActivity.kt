@@ -1,12 +1,18 @@
 package com.ayush171196.Startup
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.ContactsContract
+import android.support.v4.app.ActivityCompat
 import android.view.*
 import android.widget.AdapterView
 import android.widget.BaseAdapter
+import android.widget.Toast
 import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.activity_main.*
@@ -21,7 +27,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val userData = UserData(this)
-        userData.loadPhoneNumber()
+        userData.isFirstTimeLoad()
 
         databaseRef = FirebaseDatabase.getInstance().reference
 
@@ -37,6 +43,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshUsers()
+        checkPermission()
     }
 
     fun refreshUsers(){
@@ -58,7 +65,8 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 for (key in td.keys) {
-                    listOfContact.add(UserContact("NoName", key))
+                    val name = listOfContact
+                    listOfContact.add(UserContact(name.toString(),key))
                 }
                 adapter!!.notifyDataSetChanged()
             }catch (ex:Exception){
@@ -145,5 +153,56 @@ class MainActivity : AppCompatActivity() {
         override fun getCount(): Int {
             return listOfContact.size
         }
+    }
+
+    val CONTACT_CODE =123
+    fun checkPermission(){
+
+        if(Build.VERSION.SDK_INT>=23){
+
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS) !=
+                    PackageManager.PERMISSION_GRANTED ){
+
+                requestPermissions(arrayOf(android.Manifest.permission.READ_CONTACTS), CONTACT_CODE)
+                return
+            }
+        }
+        loadContact()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+
+        when (requestCode) {
+            CONTACT_CODE-> {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    loadContact()
+                } else {
+                    Toast.makeText(this, "Cannot acces to contact ", Toast.LENGTH_LONG).show()
+                }
+            }
+            else ->{
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            }
+
+        }
+
+
+    }
+
+    var listOfContacts = HashMap<String,String>()
+    fun loadContact() {
+        try{
+            listOfContacts.clear()
+
+            val cursor=contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,null,null,null)
+            cursor.moveToFirst()
+            do {
+                val name=cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
+                val phoneNumber=cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+
+                listOfContacts.put(UserData.formatPhoneNumber(phoneNumber),name)
+            }while (cursor.moveToNext())
+        }catch (ex:Exception){}
+
     }
 }

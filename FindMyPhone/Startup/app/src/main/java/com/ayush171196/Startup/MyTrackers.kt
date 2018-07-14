@@ -14,6 +14,7 @@ import android.view.*
 import android.widget.Adapter
 import android.widget.AdapterView
 import android.widget.BaseAdapter
+import android.widget.Toast
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.activity_my_trackers.*
@@ -93,6 +94,25 @@ class MyTrackers : AppCompatActivity() {
             }
         }
         pickContact()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+
+        when (requestCode) {
+            CONTACT_CODE-> {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    pickContact()
+                } else {
+                    Toast.makeText(this, "Cannot acces to contact ", Toast.LENGTH_LONG).show()
+                }
+            }
+            else ->{
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            }
+
+        }
+
+
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
